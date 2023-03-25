@@ -45,35 +45,29 @@ class Client(object):
         elif method == c.POST:
             response = self.client.post(request_path, data=body, headers=header)
         self.request_times += 1
-        # print('request times:', self.request_times)
         if (self.request_times > 512):
             self.client.close()
             self.client._state = _client.ClientState.UNOPENED
             self.request_times = 0
-            # print('close the current tcp connection while request times larger than 512.')
         return response
 
     def _request_until_success(self, method, request_path, params):
         response = ''
-        retry_times = 0
         while True:
             try:
                 response = self._request(method, request_path, params)
                 if not str(response.status_code).startswith('2'):
-                    print('response.status_code:', response.status_code)
-                    print('response.json.code:', response.json()['code'])
-                    print('response.json.msg:', response.json()['msg'])
+                    httpcode = response.status_code
+                    okxcode = response.json()['code']
+                    okxmsg = response.json()['msg']
+                    print('[okxapi] httpcode: %s, okxcode: %s, okxmsg: %s'%(httpcode, okxcode, okxmsg))
                     time.sleep(1)
                     continue
                 break
             except Exception as e:
                 msg = traceback.format_exc()
-                print(e)
-                retry_times += 1
-                print('http request retry in 1 seconds, retry times:', retry_times)
+                print('[http]', e)
                 time.sleep(1)
-        # if not str(response.status_code).startswith('2'):
-        #     raise exceptions.OkxAPIException(response)
         return response.json()
 
     def _request_without_params(self, method, request_path):
